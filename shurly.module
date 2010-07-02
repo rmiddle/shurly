@@ -30,7 +30,7 @@ function shurly_menu(){
  * Implementation of hook_perm()
  */
 function shurly_perm(){
-  return array('Create short URLs', 'Administer short URLs');
+  return array('Create short URLs', 'Enter custom URLs', 'View own URL stats', 'Administer short URLs');
 }
 
 function shurly_block($op = 'list', $delta = 0, $edit = array()){
@@ -89,12 +89,15 @@ function shurly_create_form($form_state){
     '#value' => t('Make it!'),
   );
   
+  $short_default = user_access('Enter custom URLs') ? (isset($form_state['storage']['shurly']['short_url']) ? $form_state['storage']['shurly']['short_url'] : '') : '';
+  
   $form['short_url'] = array(
     '#type' => 'textfield',
     '#size' => 6,
     '#field_prefix' => $GLOBALS['base_url'] .'/',
     '#field_suffix' => ' <span class="shurly-choose">&lt;--- ' . t('create custom URL') . '</span>',
-    '#default_value' => isset($form_state['storage']['shurly']['short_url']) ? $form_state['storage']['shurly']['short_url'] : '',
+    '#default_value' => $short_default,
+    '#access' => user_access('Enter custom URLs'),
   );
   
   if (isset($form_state['storage']['shurly']['final_url'])) {

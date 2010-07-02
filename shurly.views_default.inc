@@ -562,7 +562,7 @@ function shurly_views_default_views() {
   ));
   $handler->override_option('access', array(
     'type' => 'perm',
-    'perm' => 'Create short URLs',
+    'perm' => 'View own URL stats',
   ));
   $handler->override_option('cache', array(
     'type' => 'none',
