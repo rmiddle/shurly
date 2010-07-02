@@ -9,7 +9,7 @@ function shurly_views_data() {
   // Advertise this table as a possible base table
   $data['shurly']['table']['base'] = array(
     'field' => 'rid',
-    'title' => t('Link'),
+    'title' => t('Short URLs'),
     'help' => t('Shurly shortened URLs.'),
     'weight' => 10,
   );
@@ -126,7 +126,7 @@ function shurly_views_data() {
   
     // Count
   $data['shurly']['count'] = array(
-    'title' => t('Count'),
+    'title' => t('Use count'),
     'help' => t('Number of times this link has been followed.'),
     'field' => array(
       'handler' => 'views_handler_field',
@@ -166,7 +166,7 @@ function shurly_views_data() {
   
   // Boolean for custom entry
   $data['shurly']['custom'] = array(
-    'title' => t('Custom link'),
+    'title' => t('Custom URL'),
     'help' => t('Boolean flag set for custom short URLs entered by user.'),
     'field' => array(
       'handler' => 'views_handler_field_boolean',
@@ -187,7 +187,7 @@ function shurly_views_data() {
   
   // Boolean for active link
   $data['shurly']['active'] = array(
-    'title' => t('Link active'),
+    'title' => t('URL active'),
     'help' => t('Is this link active or has it been deactivated?'),
     'field' => array(
       'handler' => 'views_handler_field_boolean',
@@ -206,15 +206,42 @@ function shurly_views_data() {
     ),
   );
   
-  $data['shurly']['source_link'] = array(
+  $data['shurly']['link_test'] = array(
     'field' => array(
-      'title' => t('Test link'),
+      'title' => t('Test URL'),
       'help' => t('Redirecting link.'),
-      'handler' => 'shurly_handler_field_shurly_link',
+      'handler' => 'shurly_handler_field_shurly_link_test',
+      'parent' => 'views_handler_field',
+    ),
+  );
+  
+  $data['shurly']['link_delete'] = array(
+    'field' => array(
+      'title' => t('Delete URL'),
+      'help' => t('Link to delete the URL'),
+      'handler' => 'shurly_handler_field_shurly_link_delete',
       'parent' => 'views_handler_field',
     ),
   );
 
-
   return $data;
+}
+
+/**
+ * Implementation of hook_views_handlers().
+ */
+function shurly_views_handlers() {
+  return array(
+    'info' => array(
+      'path' => drupal_get_path('module', 'shurly'),
+    ),
+    'handlers' => array(
+      'shurly_handler_field_shurly_link_delete' => array(
+        'parent' => 'views_handler_field',
+      ),
+      'shurly_handler_field_shurly_link_test' => array(
+        'parent' => 'views_handler_field',
+      ),
+    ),
+  );
 }
