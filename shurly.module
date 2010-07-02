@@ -1,8 +1,5 @@
 <?php
 
-//include_once('shurly.views.inc');
-//include_once('views_handler_field_shurly_link.inc');
-
 /**
  * @file description http://www.youtube.com/watch?v=Qo7qoonzTCE
  *
@@ -20,21 +17,6 @@ function shurly_menu(){
 
   $items['shurly'] = array(
     'title' => 'Create URL',
-    'description' => 'Create a short URL',
-    'page callback' => 'drupal_get_form',
-    'page arguments' => array('shurly_create_form'),
-    'access arguments' => array('Create short URLs'),
-  );
-  
-  //$items['i'] = array(
-  //  'title' => 'URL Info',
-  //  'page callback' => 'drupal_get_form',
-  //  'page arguments' => array('shurly_create_form'),
-  //  'access arguments' => array('Create short URLs'),
-  //);
-  
-  $items['myurls'] = array(
-    'title' => 'URL Info',
     'description' => 'Create a short URL',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('shurly_create_form'),
@@ -145,7 +127,7 @@ function shurly_create_form($form_state){
 
 function shurly_create_form_validate(&$form, &$form_state) {
 
-  if (!user_access('create short URLs')) {
+  if (!user_access('Create short URLs')) {
     form_set_error('', t('You do not have permission to create short URLs on this site'));
     return;
   }

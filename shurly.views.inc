@@ -126,7 +126,7 @@ function shurly_views_data() {
   
     // Count
   $data['shurly']['count'] = array(
-    'title' => t('Use count'),
+    'title' => t('Clicks'),
     'help' => t('Number of times this link has been followed.'),
     'field' => array(
       'handler' => 'views_handler_field',
