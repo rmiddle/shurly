@@ -1,0 +1,440 @@
+<?php
+
+//include_once('shurly.views.inc');
+//include_once('views_handler_field_shurly_link.inc');
+
+/**
+ * @file description http://www.youtube.com/watch?v=Qo7qoonzTCE
+ *
+ * @todo
+ *   - create REST API
+ *   - prevent endless loop links (back to themselves or others on this site)
+ */
+
+/**
+ * Implementation of hook_menu()
+ */
+function shurly_menu(){
+  // callback for creation of URLs
+  $items = array();
+
+  $items['shurly'] = array(
+    'title' => 'Create URL',
+    'description' => 'Create a short URL',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('shurly_create_form'),
+    'access arguments' => array('Create short URLs'),
+  );
+  
+  //$items['i'] = array(
+  //  'title' => 'URL Info',
+  //  'page callback' => 'drupal_get_form',
+  //  'page arguments' => array('shurly_create_form'),
+  //  'access arguments' => array('Create short URLs'),
+  //);
+  
+  $items['myurls'] = array(
+    'title' => 'URL Info',
+    'description' => 'Create a short URL',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('shurly_create_form'),
+    'access arguments' => array('Create short URLs'),
+  );
+  
+  return $items;
+}
+
+/**
+ * Implementation of hook_perm()
+ */
+function shurly_perm(){
+  return array('Create short URLs', 'Administer short URLs');
+}
+
+function shurly_block($op = 'list', $delta = 0, $edit = array()){
+  // create a block to add URL
+  switch ($op) {
+    case 'list':
+      $blocks['form'] = array('info' => t('Short URL form'));
+      $blocks['history'] = array('info' => t('Link history'));  
+      return $blocks;
+    case 'view':
+      // don't show the block when user is on the callback page
+      if ($delta == 'form' && user_access('Create short URLs') && arg(0) != 'shurly') {
+        $block = array('subject' => t('Create a short URL'),
+          'content' => drupal_get_form('shurly_create_form'));
+        return $block;
+      }
+      if ($delta == 'history' && $GLOBALS['user']->uid != 0 && arg(0) != 'shurly') {
+        $block = array('subject' => t('Link history'),
+          'content' => shurly_link_history());
+        return $block;
+      }
+      break;
+  }
+}
+
+/**
+ * Implementation of hook_boot()
+ */
+function shurly_boot() {
+  // we boostrap the path.inc file early to set up $_GET['q']
+  // this is a little bit of a hack and may impact performance of sites with page caching slightly
+  _drupal_bootstrap(DRUPAL_BOOTSTRAP_PATH);
+  $row = db_fetch_object(db_query("SELECT rid, destination FROM {shurly} WHERE BINARY source = '%s' AND active = 1", $_GET['q']));
+  if ($row) {
+    shurly_goto($row);
+  }
+}
+
+/**
+ * The main form
+ */
+function shurly_create_form($form_state){
+  
+  $path = drupal_get_path('module', 'shurly');
+  drupal_add_css($path . '/shurly.css');
+
+  // form to create new short URLs
+  $form['long_url'] = array(
+    '#title' => t('Enter a long URL to make short'),
+    '#type' => 'textfield',
+    '#default_value' => $_GET['url'] ? $_GET['url'] : (isset($form_state['storage']['shurly']['long_url']) ? $form_state['storage']['shurly']['long_url'] :'http://'),
+  );
+  
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Make it!'),
+  );
+  
+  $form['short_url'] = array(
+    '#type' => 'textfield',
+    '#size' => 6,
+    '#field_prefix' => $GLOBALS['base_url'] .'/',
+    '#field_suffix' => ' <span class="shurly-choose">&lt;--- ' . t('create custom URL') . '</span>',
+    '#default_value' => isset($form_state['storage']['shurly']['short_url']) ? $form_state['storage']['shurly']['short_url'] : '',
+  );
+  
+  if (isset($form_state['storage']['shurly']['final_url'])) {
+    $form['result'] = array(
+      '#type' => 'textfield',
+      '#size' => 30,
+      '#value' => $form_state['storage']['shurly']['final_url'],
+      '#prefix' => '<div class="shurly-result">',
+      '#suffix' => '</div>',
+      '#field_prefix' => t('Your short URL: '),
+      '#field_suffix' => ' <div id="shurly-copy-container" style="position:relative;"><div id="shurly-copy">'. t('copy'). '</div></div>
+      <div><a href="http://twitter.com?status='. urlencode($form_state['storage']['shurly']['final_url']) .'">'. t('Create a Twitter message with this link') .'</a></div></div>',
+    );
+    drupal_add_js($path . '/zeroclipboard/ZeroClipboard.js');
+    drupal_add_js($path . '/shurly.js');
+    drupal_add_js("ZeroClipboard.setMoviePath( '". url($path .'/zeroclipboard/ZeroClipboard.swf') ."' );", 'inline');
+  }
+  
+  $form['bookmarklet'] = array(
+    '#type' => 'markup',
+    '#value' => t("<p>Drag this link to your bookmark bar to quickly create a short URL from any page: <a class=\"shurly-bookmarklet\" href=\"!jsurl\">!sitename</a></p>", array('!jsurl' => "javascript:void(location.href='". url('shurly', array('absolute' => TRUE)) ."?url='+encodeURIComponent(location.href))", '!sitename' => variable_get('site_name', 'Drupal'))),
+  );
+  
+  unset($form_state['storage']['shurly']);
+  
+  return $form;
+  
+}
+
+
+function shurly_create_form_validate(&$form, &$form_state) {
+
+  if (!user_access('create short URLs')) {
+    form_set_error('', t('You do not have permission to create short URLs on this site'));
+    return;
+  }
+  
+  $form_state['values']['long_url'] = trim($form_state['values']['long_url']);
+  $form_state['values']['short_url'] = trim($form_state['values']['short_url']);
+  $vals = $form_state['values'];
+  
+  // check that they've entered a URL
+  if ($vals['long_url'] == '' || $vals['long_url'] == 'http://' || $vals['long_url'] == 'https://') {
+    form_set_error('long_url', t('Please enter a web URL'));
+  }
+  elseif (stripos($vals['long_url'], "http://") !== 0 && stripos($vals['long_url'], "https://") !== 0) {
+    form_set_error('long_url', t('Please enter a web URL beginning with http:// or https://'));
+  }
+  
+  if (trim($vals['short_url']) != '') {
+    // a custom short URL has been entered
+    $form_state['custom'] = TRUE;
+    if (!shurly_validate_custom($vals['short_url'])) {
+      form_set_error('short_url', t('Short URL may only contain alphanumeric characters'));
+    }
+    elseif($exists = shurly_url_exists($vals['short_url'], $vals['long_url'])) {
+      if ($exists == 'found') {
+        form_set_error('short_url', t('This short URL is already used'));
+      }
+      else {
+        $form_state['storage']['shurly']['final_url'] = url($vals['short_url'], array('absolute' => TRUE));
+        $form_state['url_exists'] = TRUE;
+        drupal_set_message(t('This URL pair already exists'), 'error');
+      }
+    }
+    elseif (url($vals['short_url'], array('absolute' => TRUE)) == $vals['long_url']) {
+      // check that link isn't to itself (creating infinite loop)
+      // problem - http vs https
+      form_set_error('short_url', t('You cannot create links to themselves'));
+    }
+    elseif (!shurly_path_available($vals['short_url'])) {
+      form_set_error('short_url', t('This custom URL is reserved. Please choose another.'));
+    }
+  }
+  else {
+    // custom short URL field is empty
+    $form_state['custom'] = FALSE;
+    if ($exist = shurly_get_latest_short($vals['long_url'], $GLOBALS['user']->uid)) {
+      $short = $exist;
+      // we flag this as URL Exists so that it displays but doesn't get saved to the db
+      $form_state['url_exists'] = TRUE;
+    }
+    else {
+      $short = shurly_next_url();
+    }
+    $form_state['values']['short_url'] = $short;
+    $form_state['storage']['shurly']['short_url'] = $short;
+  }
+  
+}
+
+function shurly_create_form_submit($form, &$form_state) {
+  // submit the short URL form
+  $long_url = $form_state['storage']['shurly']['long_url'] = $form_state['values']['long_url'];
+  $short_url = $form_state['storage']['shurly']['short_url'] = $form_state['values']['short_url'];
+  $final_url = $form_state['storage']['shurly']['final_url'] = url($short_url, array('absolute' => TRUE));
+  $custom = $form_state['custom'];
+  if (empty($form_state['url_exists'])) {
+    shurly_save_url($long_url, $short_url, NULL, $custom);
+  }
+}
+
+
+
+/**
+ * From http://www.php.net/manual/en/function.base-convert.php#52450
+ *
+ * Parameters:
+ * $num - your decimal integer
+ * $base - base to which you wish to convert $num (leave it 0 if you are providing $index or omit if you're using default (62))
+ * $index - if you wish to use the default list of digits (0-1a-zA-Z), omit this option, otherwise provide a string (ex.: "zyxwvu")
+ */
+function shurly_dec2any($num, $base=62, $index=false) {
+    if (! $base ) {
+        $base = strlen( $index );
+    } else if (! $index ) {
+        // note: we could rearrange this string to get more random looking URLs
+        // another note, to create printable URLs, omit the following characters: 01lIO
+        $index = substr("0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ" ,0 ,$base );
+    }
+    $out = "";
+    for ( $t = floor( log10( $num ) / log10( $base ) ); $t >= 0; $t-- ) {
+        $a = floor( $num / pow( $base, $t ) );
+        $out = $out . substr( $index, $a, 1 );
+        $num = $num - ( $a * pow( $base, $t ) );
+    }
+    return $out;
+}
+
+/**
+ 	* Implementation of hook_views_api.
+ 	* Notifies the Views module that we're compatible with a particular API revision.
+ 	*/
+function shurly_views_api() {
+  return array(
+    'api' => 2,
+  );
+}
+
+
+
+/******************************************************
+ * API functions
+ ******************************************************
+ */
+ 
+/**
+ * API function to save a URL
+ */
+function shurly_save_url($long_url, $short_path, $account = NULL, $custom = NULL) {
+  
+  if (is_null($account)) {
+    $account = $GLOBALS['user'];
+  }
+  
+  $record = array();
+  $record['destination'] = $long_url;
+  $record['custom'] = $custom ? 1 : 0;
+  $record['created'] = time();
+  $record['source'] = $short_path;
+  $record['uid'] = $account->uid;
+  $record['count'] = $record['last_used'] = 0;
+  $record['active'] = 1;
+  
+  return drupal_write_record('shurly', $record);
+  
+}
+
+
+/**
+ * Activate or deactivate a link
+ */
+function shurly_set_link_active($rid, $active) {
+  $record = db_fetch_array(db_query('SELECT * FROM {shurly} WHERE rid = %d', $rid));
+  if ($record) {
+    $record['rid'] = $rid;
+    $record['active'] = $active ? 1 : 0;
+    return drupal_write_record('shurly', $record, 'rid');
+  }
+  else {
+    return FALSE;
+  }
+}
+
+/**
+ * Validate custom short URL string
+ *
+ * @return TRUE if valid, FALSE if invalid
+ */
+function shurly_validate_custom($custom) {
+  // we allow alphanumeric characters as well as _, and -
+  return preg_match('/[^0-9A-Za-z_-]/', $custom) ? FALSE : TRUE;
+}
+
+/**
+ * Generate a random short URL
+ * Pretty much unused at this point
+ * this method could take a LOOOONG time on a site with lots of URLs
+ */
+function shurly_generate_random($len = NULL) {
+  if ($len == NULL) {
+    $len = variable_get('shurly_length', 4);
+  }
+  $charset = "abcdefghijklmnopqrstuvwxyz123456789";
+  $charlen = strlen($charset) - 1;
+  do {
+    $str = '';
+    for ($i=0; $i<$len; $i++) {
+      $str .= $charset[mt_rand(0, $charlen)];
+    }
+    // check that this string hasn't been used already
+    // check that the string is a valid (available) path
+  } while (shurly_url_exists($str) || !shurly_path_available($str));
+    
+  return $str;
+}
+
+/**
+ * Return next available short URL
+ */
+function shurly_next_url() {
+  $count = variable_get('shurly_counter', 3249); // starts the URLs with 3 characters
+  do {
+    $count++;
+    // counter is stored as base 10
+    // $index is a-z, A-Z, 0-9, sorted randomly, with confusing characters (01lIO) removed - 57 characters
+    // a custom index can be created as a variable override in settings.php
+    $index = variable_get('shurly_index', 'kZ4oJ3Uwi5STqcpGNxfYgMQAdPWmsenh78XB26uLbEaRDzKrHVj9CyFtv');
+    $str = shurly_dec2any($count, NULL, $index);
+    
+    // check that this string hasn't been used already
+    // check that the string is a valid (available) path
+  } while (shurly_url_exists($str) || !shurly_path_available($str));
+  
+  variable_set('shurly_counter', $count);
+  
+  return $str;
+}
+
+/**
+ * Checks to see if there's a menu handler or a path alias for a given path
+ *
+ * @return TRUE if there are no conflicts
+ */
+function shurly_path_available($path){
+  $return = TRUE;
+  // see if $path is an alias
+  $source = drupal_lookup_path('source', $path);
+  if ($source) {
+    // if so, set alias source to $path
+    $path = $source;
+  }
+  // check to see if $path has a menu callback
+  if (menu_get_item($path)) {
+    $return = FALSE;
+  }
+  return $return;
+}
+
+/**
+ * Check to see if this short URL already exists
+ */
+function shurly_url_exists($short, $long = NULL) {
+  $redirect = shurly_get_redirect($short);
+  $return = FALSE;
+  if ($redirect) {
+    $return = 'found';
+  }
+  if ($long && $redirect->destination == $long) {
+    $return = 'match';
+  }
+  return $return;
+}
+
+/**
+ * Given the short URL, return the long one
+ *  NOTE: Always check $redirect->active before using the result
+ */
+function shurly_get_redirect($short_url) {
+  // we add 'BINARY' to ensure that we're doing a CASE SENSITIVE query
+  $redirect = db_fetch_object(db_query("SELECT * FROM {shurly} WHERE BINARY source = '%s'", $short_url));
+  return $redirect;
+}
+
+/**
+ * Get the latest generated short URL by a given user for a given long URL
+ */
+function shurly_get_latest_short($long, $uid) {
+  return db_result(db_query("SELECT source FROM {shurly} WHERE destination = '%s' AND uid = %d AND custom = 0 AND active = 1 ORDER BY rid DESC", $long, $uid));
+}
+
+/**
+ * A heavily modified version of drupal_goto() (which hasn't been bootstrapped during hook_boot()
+ */
+function shurly_goto($row) {
+  if (!$row || (isset($_REQUEST['redirect']) && $_REQUEST['redirect'] == 'false')) {
+    return;
+  }
+  
+  $url = $row->destination;
+  
+  // Remove newlines from the URL to avoid header injection attacks.
+  $url = str_replace(array("\n", "\r"), '', $url);
+
+  // Allow modules to react to the end of the page request before redirecting.
+  // We do not want this while running update.php.
+  if (!defined('MAINTENANCE_MODE') || MAINTENANCE_MODE != 'update') {
+    module_invoke_all('exit', $url);
+  }
+
+  // Even though session_write_close() is registered as a shutdown function, we
+  // need all session data written to the database before redirecting.
+  session_write_close();
+
+  header('Location: '. $url, TRUE, 301);
+  
+  // update access information on this row
+  db_query('UPDATE {shurly} SET count = count + 1, last_used = %d WHERE rid = %d', time(), $row->rid);
+
+  // The "Location" header sends a redirect status code to the HTTP daemon. In
+  // some cases this can be wrong, so we make sure none of the code below the
+  // drupal_goto() call gets executed upon redirection.
+  exit();
+
+}

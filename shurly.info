@@ -1,0 +1,4 @@
+; $Id$
+name = Shurly
+description = A complete short URL service.
+core = 6.x

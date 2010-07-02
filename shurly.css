@@ -1,0 +1,43 @@
+.shurly-choose {
+  color: #999;
+}
+
+.shurly-result {
+  border: 3px #999 solid;
+  padding: 5px;
+  margin: 5px 0;
+}
+
+.shurly-result .form-item {
+  margin: 0;
+}
+
+#shurly-copy-container {
+  display:inline;
+}
+
+#shurly-copy {
+  border: 2px outset #999;
+  background-color: #CCC;
+  position: relative;
+  display: inline;
+  padding: .1em .3em;
+}
+
+#shurly-copy.hover {
+  border-color: #777;
+  background-color: #DDD;
+}
+
+.shurly-bookmarklet {
+  background-color: #999;
+  color: #FFF;
+  border: 1px solid #333;
+  padding: .1em .5em;
+  text-decoration: none;
+}
+
+.shurly-bookmarklet:hover {
+  background-color: #666;
+  text-decoration: none;
+}
