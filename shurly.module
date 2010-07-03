@@ -25,6 +25,14 @@ function shurly_menu() {
     'access arguments' => array('Create short URLs'),
   );
   
+  $items['admin/build/shurly/delete/%'] = array(
+    'title' => 'Delete URL',
+    'page callback' => 'shurly_confirm_delete',
+    'page arguments' => array(4),
+    'access arguments' => array('Create short URLs'),
+    'type' => MENU_CALLBACK,
+  );
+  
   return $items;
 }
 
@@ -69,6 +77,34 @@ function shurly_boot() {
   if ($row) {
     shurly_goto($row);
   }
+}
+
+function shurly_confirm_delete($rid) {
+  // check access
+  global $user;
+  if (is_numeric($rid)) {
+    $row = db_fetch_object(db_query('SELECT uid FROM {shurly} WHERE rid = %d', $rid));
+  }
+  if ($row && (user_access('Administer short URLs') || $row->uid == $user->uid)) {
+    return drupal_get_form('shurly_confirm_delete_form', $rid);
+  }
+  else {
+    drupal_access_denied();
+    return;
+  }
+}
+
+function shurly_confirm_delete_form(&$form_state, $rid) {
+  $form['rid'] = array(
+      '#type' => 'value',
+      '#value' => $rid,
+    );
+    return confirm_form($form, t('Are you sure you want to delete and deactivate this URL?'), rawurldecode($_GET['destination']), t('Once this item is deleted, you will not be able to create another link with the same short URL.'));
+}
+
+function shurly_confirm_delete_form_submit($form, &$form_state) {
+  drupal_set_message(t('URL deactivated'));
+  shurly_set_link_active($form_state['values']['rid'], 0); 
 }
 
 /**
