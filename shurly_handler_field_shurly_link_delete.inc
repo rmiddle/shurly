@@ -1,4 +1,9 @@
 <?php
+// $Id$
+
+/**
+ * @file Shurly Views handler for delete links function
+ */
 
 /**
  * Field handler to present a link to the short URL entry.

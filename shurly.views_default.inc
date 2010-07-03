@@ -1,5 +1,9 @@
 <?php
+// $Id$
 
+/**
+ * @file Shurly default views
+ */
 
 /**
  * Implementation of hook_views_default_views().

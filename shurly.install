@@ -1,4 +1,9 @@
 <?php
+// $Id$
+
+/**
+ * @file Shurly install file
+ */
 
 /**
  * Implement hook_schema().
