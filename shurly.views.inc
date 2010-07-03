@@ -77,7 +77,8 @@ function shurly_views_data() {
     'title' => t('Short URL'),
     'help' => t('The source URL which generates a redirect'),
     'field' => array(
-      'handler' => 'views_handler_field',
+      'handler' => 'shurly_handler_field_short_url',
+      'parent' => 'views_handler_field',
       'click sortable' => TRUE,
     ),
     'filter' => array(
@@ -96,6 +97,7 @@ function shurly_views_data() {
     'title' => t('Long URL'),
     'help' => t('The destination URL'),
     'field' => array(
+      //'handler' => 'shurly_handler_field_destination',
       'handler' => 'views_handler_field',
       'click sortable' => TRUE,
     ),
@@ -245,6 +247,9 @@ function shurly_views_handlers() {
         'parent' => 'views_handler_field',
       ),
       'shurly_handler_field_shurly_link_test' => array(
+        'parent' => 'views_handler_field',
+      ),
+      'shurly_handler_field_short_url' => array(
         'parent' => 'views_handler_field',
       ),
     ),
