@@ -4,7 +4,6 @@
  * @file description http://www.youtube.com/watch?v=Qo7qoonzTCE
  *
  * @todo
- *   - (option to) make short URL Views fields longer in listing
  *   - click to copy link in views
  *   - create REST API
  *   - prevent endless loop links (back to themselves or others on this site)
@@ -25,11 +24,12 @@ function shurly_menu() {
     'access arguments' => array('Create short URLs'),
   );
   
-  $items['admin/build/shurly/delete/%'] = array(
+  $items['shurly/delete/%'] = array(
     'title' => 'Delete URL',
-    'page callback' => 'shurly_confirm_delete',
-    'page arguments' => array(4),
-    'access arguments' => array('Create short URLs'),
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('shurly_confirm_delete_form', 2),
+    'access callback' => 'shurly_delete_access',
+    'access arguments' => array(2),
     'type' => MENU_CALLBACK,
   );
   
@@ -79,31 +79,48 @@ function shurly_boot() {
   }
 }
 
-function shurly_confirm_delete($rid) {
-  // check access
-  global $user;
-  if (is_numeric($rid)) {
-    $row = db_fetch_object(db_query('SELECT uid FROM {shurly} WHERE rid = %d', $rid));
-  }
-  if ($row && (user_access('Administer short URLs') || $row->uid == $user->uid)) {
-    return drupal_get_form('shurly_confirm_delete_form', $rid);
-  }
-  else {
-    drupal_access_denied();
-    return;
-  }
+/**
+ 	* Implementation of hook_views_api.
+ 	* Notifies the Views module that we're compatible with a particular API revision.
+ 	*/
+function shurly_views_api() {
+  return array(
+    'api' => 2,
+  );
 }
 
+/**
+ * Access callback for deleting (deactivating) a URL
+ */
+function shurly_delete_access($rid) {
+  if (is_numeric($rid)) {
+    global $user;
+    $row = db_fetch_object(db_query('SELECT uid, source, destination FROM {shurly} WHERE rid = %d', $rid));
+    if ($row && (user_access('Administer short URLs') || $row->uid == $user->uid)) {
+      return TRUE;
+    }
+  }
+  return FALSE;
+}
+
+/**
+ * Confirmation form to delete a link
+ */
 function shurly_confirm_delete_form(&$form_state, $rid) {
+  $row = db_fetch_object(db_query('SELECT destination FROM {shurly} WHERE rid = %d', $rid));
   $form['rid'] = array(
       '#type' => 'value',
       '#value' => $rid,
     );
-    return confirm_form($form, t('Are you sure you want to delete and deactivate this URL?'), rawurldecode($_GET['destination']), t('Once this item is deleted, you will not be able to create another link with the same short URL.'));
+    // the 'destination' argument here is a bit of a hack...
+    return confirm_form($form, t('Are you sure you want to delete and deactivate this URL?'), rawurldecode($_REQUEST['destination']), t('You are about to deactivate the link which redirects to %url. Once this item is deleted, you will not be able to create another link with the same short URL.', array('%url' => $row->destination)));
 }
 
+/**
+ * Submit handler for above form
+ */
 function shurly_confirm_delete_form_submit($form, &$form_state) {
-  drupal_set_message(t('URL deactivated'));
+  drupal_set_message(t('URL has been deactivated'));
   shurly_set_link_active($form_state['values']['rid'], 0); 
 }
 
@@ -192,14 +209,15 @@ function shurly_create_form_validate(&$form, &$form_state) {
       form_set_error('short_url', t('Short URL may only contain alphanumeric characters'));
     }
     elseif ($exists = shurly_url_exists($vals['short_url'], $vals['long_url'])) {
-      if ($exists == 'found') {
-        form_set_error('short_url', t('This short URL is already used'));
-      }
-      else {
-        $form_state['storage']['shurly']['final_url'] = url($vals['short_url'], array('absolute' => TRUE));
-        $form_state['url_exists'] = TRUE;
-        drupal_set_message(t('This URL pair already exists'), 'error');
-      }
+      form_set_error('short_url', t('This short URL has already been used'));
+      //if ($exists == 'found') {
+      //  form_set_error('short_url', t('This short URL is already used'));
+      //}
+      //else {
+      //  $form_state['storage']['shurly']['final_url'] = url($vals['short_url'], array('absolute' => TRUE));
+      //  $form_state['url_exists'] = TRUE;
+      //  drupal_set_message(t('This URL pair already exists'), 'error');
+      //}
     }
     elseif (url($vals['short_url'], array('absolute' => TRUE)) == $vals['long_url']) {
       // check that link isn't to itself (creating infinite loop)
@@ -238,8 +256,6 @@ function shurly_create_form_submit($form, &$form_state) {
   }
 }
 
-
-
 /**
  * From http://www.php.net/manual/en/function.base-convert.php#52450
  *
@@ -264,16 +280,6 @@ function shurly_dec2any($num, $base=62, $index=FALSE) {
         $num = $num - ( $a * pow( $base, $t ) );
     }
     return $out;
-}
-
-/**
- 	* Implementation of hook_views_api.
- 	* Notifies the Views module that we're compatible with a particular API revision.
- 	*/
-function shurly_views_api() {
-  return array(
-    'api' => 2,
-  );
 }
 
 
