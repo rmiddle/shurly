@@ -11,13 +11,12 @@
 class shurly_handler_field_shurly_link_delete extends views_handler_field {
   function construct() {
     parent::construct();
+    $this->additional_fields['uid'] = 'uid';
   }
 
   function option_definition() {
     $options = parent::option_definition();
-
     $options['text'] = array('default' => '', 'translatable' => TRUE);
-
     return $options;
   }
 
@@ -34,16 +33,15 @@ class shurly_handler_field_shurly_link_delete extends views_handler_field {
     $this->ensure_my_table();
     $this->add_additional_fields();
   }
-    
-  function access() {
-    global $user;
-    $uid = $values->{$this->aliases['uid']};
-    return user_access('Administer short URLs'); // || $this->uid == $user->uid
-  }
 
   function render($values) {
-    $text = !empty($this->options['text']) ? $this->options['text'] : t('delete');
-    $rid = $values->rid;
-    return l($text, "admin/build/shurly/delete/$rid", array('query' => drupal_get_destination()));
+    global $user;
+    $uid = $values->{$this->aliases['uid']};
+    // only allow the user to view the link if they can actually delete
+    if (user_access('Administer short URLs') || $uid == $user->uid) {
+      $text = !empty($this->options['text']) ? $this->options['text'] : t('delete');
+      $rid = $values->rid;
+      return l($text, "shurly/delete/$rid", array('query' => drupal_get_destination()));
+    }
   }
 }

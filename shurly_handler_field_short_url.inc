@@ -2,7 +2,7 @@
 // $Id$
 
 /**
- * @file Shurly Views handler for test link
+ * @file Shurly Views handler for short URL
  */
 
 /**
@@ -37,7 +37,7 @@ class shurly_handler_field_short_url extends views_handler_field {
   }
 
   function render($values) {
-    $text = !empty($this->options['text']) ? $this->options['text'] : url($values->shurly_source, array('absolute' => TRUE));
+    $text = !empty($this->options['text']) ? $this->options['text'] : url($values->{$this->aliases['source']}, array('absolute' => TRUE));
     return $text;
   }
 }
