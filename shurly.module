@@ -7,6 +7,7 @@
  *   - click to copy link in views
  *   - create REST API
  *   - prevent endless loop links (back to themselves or others on this site)
+ *   - allow for fun UTF characters in custom URLs
  */
 
 /**
@@ -40,7 +41,7 @@ function shurly_menu() {
  * Implementation of hook_perm()
  */
 function shurly_perm() {
-  return array('Create short URLs', 'Enter custom URLs', 'View own URL stats', 'Administer short URLs');
+  return array('Create short URLs', 'Enter custom URLs', 'View own URL stats', 'Delete own URLs', 'Administer short URLs');
 }
 
 function shurly_block($op = 'list', $delta = 0, $edit = array()) {
@@ -48,7 +49,7 @@ function shurly_block($op = 'list', $delta = 0, $edit = array()) {
   switch ($op) {
     case 'list':
       $blocks['form'] = array('info' => t('Short URL form'));
-      $blocks['history'] = array('info' => t('Link history'));  
+      $blocks['bookmarklet'] = array('info' => t('ShURLy bookmarklet'));  
       return $blocks;
     case 'view':
       // don't show the block when user is on the callback page
@@ -57,9 +58,11 @@ function shurly_block($op = 'list', $delta = 0, $edit = array()) {
           'content' => drupal_get_form('shurly_create_form'));
         return $block;
       }
-      if ($delta == 'history' && $GLOBALS['user']->uid != 0 && arg(0) != 'shurly') {
-        $block = array('subject' => t('Link history'),
-          'content' => shurly_link_history());
+      if ($delta == 'bookmarklet' && user_access('Create short URLs')) {
+        drupal_add_css(drupal_get_path('module', 'shurly') . '/shurly.css');
+        $block = array('subject' => t('Bookmarklet'),
+          'content' => t("<p>Drag this link to your bookmark bar to quickly create a short URL from any page: <a class=\"shurly-bookmarklet\" href=\"!jsurl\">!sitename</a></p>", array('!jsurl' => "javascript:void(location.href='". url('shurly', array('absolute' => TRUE)) ."?url='+encodeURIComponent(location.href))", '!sitename' => variable_get('site_name', 'Drupal'))),
+        );
         return $block;
       }
       break;
@@ -95,8 +98,14 @@ function shurly_views_api() {
 function shurly_delete_access($rid) {
   if (is_numeric($rid)) {
     global $user;
+    if (!$user->uid) {
+      // anonymous users can't delete URLs
+      return FALSE;
+    }
+    // see if there's a row
     $row = db_fetch_object(db_query('SELECT uid, source, destination FROM {shurly} WHERE rid = %d', $rid));
-    if ($row && (user_access('Administer short URLs') || $row->uid == $user->uid)) {
+    // if there's a row, and either the user is an admin, or they've got permission to create and they own this URL, then let them access
+    if ($row && (user_access('Administer short URLs') || (user_access('Delete own URLs') && $row->uid == $user->uid))) {
       return TRUE;
     }
   }
@@ -136,7 +145,7 @@ function shurly_create_form($form_state) {
   $form['long_url'] = array(
     '#title' => t('Enter a long URL to make short'),
     '#type' => 'textfield',
-    '#default_value' => $_GET['url'] ? $_GET['url'] : (isset($form_state['storage']['shurly']['long_url']) ? $form_state['storage']['shurly']['long_url'] :'http://'),
+    '#default_value' => isset($form_state['storage']['shurly']['long_url']) ? $form_state['storage']['shurly']['long_url'] : ($_GET['url'] ? $_GET['url'] : 'http://'),
   );
   
   $form['submit'] = array(
@@ -170,11 +179,6 @@ function shurly_create_form($form_state) {
     drupal_add_js($path . '/shurly.js');
     drupal_add_js("ZeroClipboard.setMoviePath( '". url($path .'/zeroclipboard/ZeroClipboard.swf') ."' );", 'inline');
   }
-  
-  $form['bookmarklet'] = array(
-    '#type' => 'markup',
-    '#value' => t("<p>Drag this link to your bookmark bar to quickly create a short URL from any page: <a class=\"shurly-bookmarklet\" href=\"!jsurl\">!sitename</a></p>", array('!jsurl' => "javascript:void(location.href='". url('shurly', array('absolute' => TRUE)) ."?url='+encodeURIComponent(location.href))", '!sitename' => variable_get('site_name', 'Drupal'))),
-  );
   
   unset($form_state['storage']['shurly']);
   
