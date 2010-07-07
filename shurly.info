@@ -1,4 +1,5 @@
 ; $Id$
-name = Shurly
+name = ShURLy
 description = A complete short URL service.
+dependencies[] = views
 core = 6.x
