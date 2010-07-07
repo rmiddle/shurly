@@ -19,12 +19,12 @@ function shurly_views_data() {
     'weight' => 10,
   );
   
-  $data['shurly']['table']['join'] = array(
-    'users' => array(
-      'left_field' => 'uid',
-      'field' => 'uid',
-    ),
-  );
+  //$data['shurly']['table']['join'] = array(
+  //  'users' => array(
+  //    'left_field' => 'uid',
+  //    'field' => 'uid',
+  //  ),
+  //);
   
   // note that this next line adds to the $data['users'] array
   // and avoids us from having to do relationships in order to get
