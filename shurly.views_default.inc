@@ -367,13 +367,13 @@ function shurly_views_default_views() {
       'alter' => array(
         'alter_text' => 0,
         'text' => '',
-        'make_link' => 0,
-        'path' => '',
+        'make_link' => 1,
+        'path' => '[destination]',
         'link_class' => '',
         'alt' => '',
         'prefix' => '',
         'suffix' => '',
-        'target' => '',
+        'target' => '_blank',
         'help' => '',
         'trim' => 0,
         'max_length' => '',
@@ -390,19 +390,22 @@ function shurly_views_default_views() {
       'table' => 'shurly',
       'field' => 'destination',
       'relationship' => 'none',
+      'override' => array(
+        'button' => 'Override',
+      ),
     ),
     'source' => array(
       'label' => 'Short URL',
       'alter' => array(
         'alter_text' => 0,
         'text' => '',
-        'make_link' => 0,
-        'path' => '',
+        'make_link' => 1,
+        'path' => '[source]',
         'link_class' => '',
         'alt' => '',
         'prefix' => '',
         'suffix' => '',
-        'target' => '',
+        'target' => '_blank',
         'help' => '',
         'trim' => 0,
         'max_length' => '',
@@ -414,11 +417,16 @@ function shurly_views_default_views() {
       'empty' => '',
       'hide_empty' => 0,
       'empty_zero' => 0,
+      'text' => '',
       'exclude' => 0,
       'id' => 'source',
       'table' => 'shurly',
       'field' => 'source',
       'relationship' => 'none',
+      'override' => array(
+        'button' => 'Override',
+      ),
+      'link' => 1,
     ),
     'created' => array(
       'label' => 'Date',
@@ -572,6 +580,7 @@ function shurly_views_default_views() {
     'type' => 'none',
   ));
   $handler->override_option('title', 'My short URLs');
+  $handler->override_option('use_ajax', TRUE);
   $handler->override_option('items_per_page', 100);
   $handler->override_option('use_pager', '1');
   $handler->override_option('style_plugin', 'table');
@@ -637,6 +646,9 @@ function shurly_views_default_views() {
     'weight' => 0,
     'name' => 'navigation',
   ));
+  $handler = $view->new_display('block', 'Block', 'block_1');
+  $handler->override_option('block_description', 'My short URLs');
+  $handler->override_option('block_caching', -1);
   $views[$view->name] = $view;
 
   return $views;
