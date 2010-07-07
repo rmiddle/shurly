@@ -38,7 +38,7 @@ class shurly_handler_field_shurly_link_delete extends views_handler_field {
     global $user;
     $uid = $values->{$this->aliases['uid']};
     // only allow the user to view the link if they can actually delete
-    if (user_access('Administer short URLs') || $uid == $user->uid) {
+    if (user_access('Administer short URLs') || (user_access('Delete own URLs') && $uid == $user->uid)) {
       $text = !empty($this->options['text']) ? $this->options['text'] : t('delete');
       $rid = $values->rid;
       return l($text, "shurly/delete/$rid", array('query' => drupal_get_destination()));
