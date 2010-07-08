@@ -210,7 +210,7 @@ function shurly_create_form_validate(&$form, &$form_state) {
     // a custom short URL has been entered
     $form_state['custom'] = TRUE;
     if (!shurly_validate_custom($vals['short_url'])) {
-      form_set_error('short_url', t('Short URL may only contain alphanumeric characters'));
+      form_set_error('short_url', t('Short URL contains unallowed characters'));
     }
     elseif ($exists = shurly_url_exists($vals['short_url'], $vals['long_url'])) {
       form_set_error('short_url', t('This short URL has already been used'));
@@ -253,7 +253,7 @@ function shurly_create_form_submit($form, &$form_state) {
   // submit the short URL form
   $long_url = $form_state['storage']['shurly']['long_url'] = $form_state['values']['long_url'];
   $short_url = $form_state['storage']['shurly']['short_url'] = $form_state['values']['short_url'];
-  $final_url = $form_state['storage']['shurly']['final_url'] = url($short_url, array('absolute' => TRUE));
+  $final_url = $form_state['storage']['shurly']['final_url'] = rawurldecode(url($short_url, array('absolute' => TRUE)));
   $custom = $form_state['custom'];
   if (empty($form_state['url_exists'])) {
     shurly_save_url($long_url, $short_url, NULL, $custom);
@@ -338,7 +338,9 @@ function shurly_set_link_active($rid, $active) {
  */
 function shurly_validate_custom($custom) {
   // we allow alphanumeric characters as well as _, and -
-  return preg_match('/[^0-9A-Za-z_-]/', $custom) ? FALSE : TRUE;
+  // return preg_match('/[^0-9A-Za-z_-]/', $custom) ? FALSE : TRUE;
+  // disallow: #%&@*{}\:;<>?/+.,$|`^[] and space character
+  return preg_match('/[#%&@*\{\}\\:\;<>\?\/\+ \.\,\'\"\$\|`^\[\]]/u', $custom) ? FALSE : TRUE;
 }
 
 /**

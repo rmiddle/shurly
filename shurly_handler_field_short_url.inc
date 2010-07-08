@@ -37,7 +37,9 @@ class shurly_handler_field_short_url extends views_handler_field {
   }
 
   function render($values) {
-    $text = !empty($this->options['text']) ? $this->options['text'] : url($values->{$this->aliases['source']}, array('absolute' => TRUE));
+    // rawurldecode() allows URLs to be shown with UTF8 characters
+    // however, this could cause other problems...
+    $text = !empty($this->options['text']) ? $this->options['text'] : rawurldecode(url($values->{$this->aliases['source']}, array('absolute' => TRUE)));
     return $text;
   }
 }
