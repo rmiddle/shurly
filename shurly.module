@@ -73,12 +73,13 @@ function shurly_block($op = 'list', $delta = 0, $edit = array()) {
  * Implementation of hook_boot()
  */
 function shurly_boot() {
-  // we boostrap the path.inc file early to set up $_GET['q']
-  // this is a little bit of a hack and may impact performance of sites with page caching slightly
-  _drupal_bootstrap(DRUPAL_BOOTSTRAP_PATH);
-  $row = db_fetch_object(db_query("SELECT rid, destination FROM {shurly} WHERE BINARY source = '%s' AND active = 1", $_GET['q']));
-  if ($row) {
-    shurly_goto($row);
+  // if the path has any slashes in it, it's not a short URL
+  // so we can bail out and save ourselves a database call
+  if (strpos($_GET['q'], '/') === FALSE) {
+    $row = db_fetch_object(db_query("SELECT rid, destination FROM {shurly} WHERE BINARY source = '%s' AND active = 1", $_GET['q']));
+    if ($row) {
+      shurly_goto($row);
+    }
   }
 }
 
