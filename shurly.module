@@ -1,5 +1,7 @@
 <?php
 
+// $Id$
+
 /**
  * @file description http://www.youtube.com/watch?v=Qo7qoonzTCE
  *
@@ -90,6 +92,7 @@ function shurly_boot() {
 function shurly_views_api() {
   return array(
     'api' => 2,
+    'path' => drupal_get_path('module', 'shurly') . '/views',
   );
 }
 
