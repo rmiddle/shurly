@@ -240,7 +240,7 @@ function shurly_views_data() {
 function shurly_views_handlers() {
   return array(
     'info' => array(
-      'path' => drupal_get_path('module', 'shurly'),
+      'path' => drupal_get_path('module', 'shurly') . '/views',
     ),
     'handlers' => array(
       'shurly_handler_field_shurly_link_delete' => array(
