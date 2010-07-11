@@ -7,9 +7,9 @@
  *
  * @todo
  *   - click to copy link in views
+ *   - fix zeroclipboard position in Chrome
  *   - create REST API
  *   - prevent endless loop links (back to themselves or others on this site)
- *   - allow for fun UTF characters in custom URLs
  */
 
 /**

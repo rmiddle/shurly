@@ -27,7 +27,11 @@ Blocks: ---------------------------
     a single page with both the entry form and the URL listing
 
 USAGE: ----------------------------
-Since short URLs are created at the root path of the site (http://example.com/myURL), it is recommended that this module be used as the basis for a complete site, not as an add-on to an existing site. That being said, the module does its best to ensure that entered URLs don't conflict with existing menu entries and path aliases in the current Drupal installation. ShURLy should work even if Drupal is installed in a subdirectory without clean URLs.
+1) Visit admin/user/permissions to set up permissions for Shurly (see explanation of permissions below).
+2) To create a new short URL, visit /shurly or add the "Create a short URL" block to your site.
+3) To view your own URLs, visit /myurls or add the 'My URLs'
+
+Since short URLs are created at the root path of the site (http://example.com/myURL), it is recommended that this module be used as the basis for a complete site, not as an add-on to an existing site. That being said, the module does its best to ensure that entered URLs don't conflict with existing menu entries and path aliases in the current Drupal installation. ShURLy should work even if Drupal is installed in a subdirectory or without clean URLs.
 
 Permissions: ----------------------
 - Create short URLs:
