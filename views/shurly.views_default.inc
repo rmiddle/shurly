@@ -2,10 +2,6 @@
 // $Id$
 
 /**
- * @file Shurly default views
- */
-
-/**
  * Implementation of hook_views_default_views().
  */
 function shurly_views_default_views() {
@@ -184,7 +180,7 @@ function shurly_views_default_views() {
       'relationship' => 'none',
     ),
     'created' => array(
-      'label' => 'Created',
+      'label' => 'Created date',
       'alter' => array(
         'alter_text' => 0,
         'text' => '',
@@ -206,12 +202,50 @@ function shurly_views_default_views() {
       'empty' => '',
       'hide_empty' => 0,
       'empty_zero' => 0,
-      'date_format' => 'small',
-      'custom_date_format' => '',
-      'exclude' => 0,
+      'date_format' => 'custom',
+      'custom_date_format' => 'M j @ H:i:s',
+      'exclude' => 1,
       'id' => 'created',
       'table' => 'shurly',
       'field' => 'created',
+      'relationship' => 'none',
+      'override' => array(
+        'button' => 'Override',
+      ),
+    ),
+    'created_1' => array(
+      'label' => 'Created',
+      'alter' => array(
+        'alter_text' => 1,
+        'text' => '<div class="shurly-ago">[created_1]</div>
+<div class="shurly-date">[created]</div>',
+        'make_link' => 0,
+        'path' => '',
+        'link_class' => '',
+        'alt' => '',
+        'prefix' => '',
+        'suffix' => '',
+        'target' => '',
+        'help' => '',
+        'trim' => 0,
+        'max_length' => '',
+        'word_boundary' => 1,
+        'ellipsis' => 1,
+        'html' => 0,
+        'strip_tags' => 0,
+      ),
+      'empty' => '',
+      'hide_empty' => 0,
+      'empty_zero' => 0,
+      'date_format' => 'time ago',
+      'custom_date_format' => '1',
+      'exclude' => 0,
+      'id' => 'created_1',
+      'table' => 'shurly',
+      'field' => 'created',
+      'override' => array(
+        'button' => 'Override',
+      ),
       'relationship' => 'none',
     ),
     'last_used' => array(
@@ -285,6 +319,74 @@ function shurly_views_default_views() {
       'relationship' => 'none',
     ),
   ));
+  $handler->override_option('filters', array(
+    'destination' => array(
+      'operator' => 'contains',
+      'value' => '',
+      'group' => '0',
+      'exposed' => TRUE,
+      'expose' => array(
+        'use_operator' => 0,
+        'operator' => 'dest',
+        'identifier' => 'dest',
+        'label' => 'Long URL',
+        'optional' => 1,
+        'remember' => 0,
+      ),
+      'case' => 0,
+      'id' => 'destination',
+      'table' => 'shurly',
+      'field' => 'destination',
+      'override' => array(
+        'button' => 'Override',
+      ),
+      'relationship' => 'none',
+    ),
+    'source' => array(
+      'operator' => 'contains',
+      'value' => '',
+      'group' => '0',
+      'exposed' => TRUE,
+      'expose' => array(
+        'use_operator' => 0,
+        'operator' => 'source_op',
+        'identifier' => 'src',
+        'label' => 'Short URL',
+        'optional' => 1,
+        'remember' => 0,
+      ),
+      'case' => 1,
+      'id' => 'source',
+      'table' => 'shurly',
+      'field' => 'source',
+      'override' => array(
+        'button' => 'Override',
+      ),
+      'relationship' => 'none',
+    ),
+    'uid' => array(
+      'operator' => 'in',
+      'value' => '',
+      'group' => '0',
+      'exposed' => TRUE,
+      'expose' => array(
+        'use_operator' => 0,
+        'operator' => 'uid_op',
+        'identifier' => 'uid',
+        'label' => 'User',
+        'optional' => 1,
+        'remember' => 0,
+        'reduce' => 0,
+      ),
+      'id' => 'uid',
+      'table' => 'shurly',
+      'field' => 'uid',
+      'override' => array(
+        'button' => 'Override',
+      ),
+      'relationship' => 'none',
+    ),
+  ));
   $handler->override_option('access', array(
     'type' => 'perm',
     'perm' => 'Administer short URLs',
@@ -293,6 +395,8 @@ function shurly_views_default_views() {
     'type' => 'none',
   ));
   $handler->override_option('title', 'Short URLs');
+  $handler->override_option('empty', 'No short URLs yet!');
+  $handler->override_option('empty_format', '1');
   $handler->override_option('items_per_page', 100);
   $handler->override_option('use_pager', '1');
   $handler->override_option('style_plugin', 'table');
@@ -302,24 +406,30 @@ function shurly_views_default_views() {
     'sticky' => 0,
     'order' => 'desc',
     'columns' => array(
-      'source' => 'source',
-      'custom' => 'custom',
+      'count' => 'count',
+      'destination_1' => 'destination_1',
       'destination' => 'destination',
+      'source' => 'source',
       'name' => 'name',
       'created' => 'created',
+      'created_1' => 'created_1',
       'last_used' => 'last_used',
-      'count' => 'count',
+      'link_delete' => 'link_delete',
     ),
     'info' => array(
-      'source' => array(
+      'count' => array(
         'sortable' => 1,
         'separator' => '',
       ),
-      'custom' => array(
+      'destination_1' => array(
         'sortable' => 0,
         'separator' => '',
       ),
       'destination' => array(
+        'sortable' => 1,
+        'separator' => '',
+      ),
+      'source' => array(
         'sortable' => 1,
         'separator' => '',
       ),
@@ -328,6 +438,10 @@ function shurly_views_default_views() {
         'separator' => '',
       ),
       'created' => array(
+        'sortable' => 0,
+        'separator' => '',
+      ),
+      'created_1' => array(
         'sortable' => 1,
         'separator' => '',
       ),
@@ -335,12 +449,11 @@ function shurly_views_default_views() {
         'sortable' => 1,
         'separator' => '',
       ),
-      'count' => array(
-        'sortable' => 1,
+      'link_delete' => array(
         'separator' => '',
       ),
     ),
-    'default' => 'created',
+    'default' => 'created_1',
   ));
   $handler = $view->new_display('page', 'Administer short URLs', 'page_1');
   $handler->override_option('path', 'admin/build/shurly');
