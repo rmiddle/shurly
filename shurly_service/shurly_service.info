@@ -1,0 +1,9 @@
+; $Id$
+name = ShURLy Service
+description = Provides web services for the ShURLy module.
+package = Services - services
+dependencies[] = services 
+dependencies[] = shurly
+core = 6.x
+
+
