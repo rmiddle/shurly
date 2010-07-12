@@ -298,7 +298,56 @@ function shurly_dec2any($num, $base=62, $index=FALSE) {
  */
  
 /**
+ * API function to shorten a URL
+ * @arg $long_url - the long URL to shorten
+ * @arg $custom - optional custom short URL
+ *
+ * @return an array with the following keys
+ *   'success' => TRUE or FALSE
+ *   'error' => reason for for failure
+ *   'long_url' => the long url
+ *   'short_url' => the short url
+ */
+function shurly_shorten($long_url, $custom = NULL, $account = NULL) {
+  $success = FALSE;
+  $account = ($account) ? $account : $GLOBALS['user'];
+  if (!shurly_validate_long($long_url)) {
+    $error = t('Invalid long URL.');
+  }
+  elseif (is_null($custom)) {
+    $latest = shurly_get_latest_short($long_url, $account->uid);
+    $short = $latest ? $latest : shurly_next_url();
+  }
+  else {
+    $short = $custom;
+    if (!shurly_validate_custom($short)) {
+      $error .= $error ? ' ' : '';
+      $error .= t('Invalid short URL.');
+    }
+    elseif (shurly_url_exists($short)) {
+      $error .= $error ? ' ' : '';
+      $error .= t('Existing short URL.');
+    }
+  }
+  if (!$error) {
+    if (shurly_save_url($long_url, $short, $account, $custom)) {
+      $success = TRUE;
+    }
+    else {
+      $error = t('Unknown database error.');
+    }
+  }
+  return array(
+    'success' => $success,
+    'error' => $error,
+    'long_url' => $long_url,
+    'short_url' => $short,
+  );
+}
+ 
+/**
  * API function to save a URL
+ * @arg $custom is a TRUE/FALSE 
  */
 function shurly_save_url($long_url, $short_path, $account = NULL, $custom = NULL) {
   
@@ -341,10 +390,19 @@ function shurly_set_link_active($rid, $active) {
  * @return TRUE if valid, FALSE if invalid
  */
 function shurly_validate_custom($custom) {
+  // we should probably check that $custom is a string here
+  
+  // we should check the length of the string
+
   // we allow alphanumeric characters as well as _, and -
   // return preg_match('/[^0-9A-Za-z_-]/', $custom) ? FALSE : TRUE;
   // disallow: #%&@*{}\:;<>?/+.,$|`^[] and space character
   return preg_match('/[#%&@*\{\}\\:\;<>\?\/\+ \.\,\'\"\$\|`^\[\]]/u', $custom) ? FALSE : TRUE;
+}
+
+
+function shurly_validate_long($long_url) {
+  return (stripos($long_url, "http://") === 0 || stripos($long_url, "https://") === 0);
 }
 
 /**
