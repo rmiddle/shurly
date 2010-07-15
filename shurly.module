@@ -311,6 +311,7 @@ function shurly_dec2any($num, $base=62, $index=FALSE) {
 function shurly_shorten($long_url, $custom = NULL, $account = NULL) {
   $success = FALSE;
   $account = ($account) ? $account : $GLOBALS['user'];
+  $error = '';
   if (!shurly_validate_long($long_url)) {
     $error = t('Invalid long URL.');
   }
@@ -340,8 +341,8 @@ function shurly_shorten($long_url, $custom = NULL, $account = NULL) {
   return array(
     'success' => $success,
     'error' => $error,
-    'long_url' => $long_url,
-    'short_url' => $short,
+    'longUrl' => $long_url,
+    'shortUrl' => $short,
   );
 }
  

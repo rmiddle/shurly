@@ -18,16 +18,17 @@ function shurly_service_perm() {
  * Implementation of hook_menu().
  */
 
-function search_service_menu() {
+function shurly_service_menu() {
   $items = array();
   $items['shurly/api/shorten'] = array(
     'title'            => t('Search Service'),
     'description'      => t('Configure search service.'),
     'file'             => 'shurly_service.inc',
-    'page callback'    => 'drupal_get_form',
+    'page callback'    => 'shurly_service_shorten',
     'access arguments' => array('Create short URLs'),
     'type'             => MENU_CALLBACK,
   );
 
   return $items;
 }
+
