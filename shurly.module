@@ -342,7 +342,7 @@ function shurly_shorten($long_url, $custom = NULL, $account = NULL) {
     'success' => $success,
     'error' => $error,
     'longUrl' => $long_url,
-    'shortUrl' => $short,
+    'shortUrl' => url($short, array('absolute' => TRUE)),
   );
 }
  
