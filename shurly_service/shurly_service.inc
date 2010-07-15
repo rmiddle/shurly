@@ -13,7 +13,7 @@ function shurly_service_shorten() {
     'format' => 'json',
     // 'domain' => NULL,
     'longUrl' => '',
-    // 'short' => '', // intentionally not implemented for now...
+    //'shortUrl' => '', // intentionally not implemented for now...
     // 'login' => NULL,
     // 'apiKey' => NULL,
     'func' => 'urlData', // function name for padded JSON
@@ -21,6 +21,29 @@ function shurly_service_shorten() {
   $input = $_REQUEST + $defaults;
   
   $data = shurly_shorten($input['longUrl']);
+    
+  shurly_service_output($data, $input);
+  
+}
+
+/**
+ * Callback for shurly/api/shorten
+ */
+function shurly_service_expand() {
+  $defaults = array(
+    'format' => 'json',
+    // 'domain' => NULL,
+    //'longUrl' => '',
+    'shortUrl' => '',
+    // 'login' => NULL,
+    // 'apiKey' => NULL,
+    'func' => 'urlData', // function name for padded JSON
+  );
+  $input = $_REQUEST + $defaults;
+  
+  $path = array_pop(explode('/', $input['shortUrl']));
+  //$path = substr(strrchr($input['shortUrl'], "/"), 1);
+  $data = shurly_expand($path, TRUE);
     
   shurly_service_output($data, $input);
   
@@ -61,7 +84,17 @@ function shurly_service_output_jsonp($data, $input) {
  *  Just outputs the shortUrl attribute... won't show errors
  */
 function shurly_service_output_txt($data) {
-  print $data['shortUrl'];
+  // sniff the URL and figure out what to output
+  switch (arg(2)) {
+    case 'expand':
+      $key = 'longUrl';
+      break;
+  
+    case 'shorten':
+    default:
+      $key = 'shortUrl';
+  }
+  print $data[$key];
 }
 
 /**

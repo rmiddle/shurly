@@ -345,6 +345,23 @@ function shurly_shorten($long_url, $custom = NULL, $account = NULL) {
     'shortUrl' => url($short, array('absolute' => TRUE)),
   );
 }
+
+function shurly_expand($short) {
+  if ($redirect = shurly_get_redirect($short, TRUE)) {
+    $success = TRUE;
+    $long_url = $redirect->destination;
+  }
+  else {
+    $success = FALSE;
+    $error = t('not found');
+  }
+  return array(
+    'success' => $success,
+    'error' => $error,
+    'longUrl' => $long_url,
+    'shortUrl' => url($short, array('absolute' => TRUE)),
+  );
+}
  
 /**
  * API function to save a URL
@@ -490,9 +507,13 @@ function shurly_url_exists($short, $long = NULL) {
  * Given the short URL, return the long one
  *  NOTE: Always check $redirect->active before using the result
  */
-function shurly_get_redirect($short_url) {
+function shurly_get_redirect($short_url, $check_active = FALSE) {
   // we add 'BINARY' to ensure that we're doing a CASE SENSITIVE query
-  $redirect = db_fetch_object(db_query("SELECT * FROM {shurly} WHERE BINARY source = '%s'", $short_url));
+  $query = "SELECT * FROM {shurly} WHERE BINARY source = '%s'";
+  if ($check_active) {
+    $query .= ' AND active = 1';
+  }
+  $redirect = db_fetch_object(db_query($query, $short_url));
   return $redirect;
 }
 

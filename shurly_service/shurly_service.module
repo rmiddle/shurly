@@ -3,6 +3,10 @@
 /**
  * @file
  *  Link ShURLy functionalities to services module.
+ * @todo
+ *  - add option to rate limit
+ *  - add option for user api keys
+ *  
  */
 
 /**
@@ -21,11 +25,15 @@ function shurly_service_perm() {
 function shurly_service_menu() {
   $items = array();
   $items['shurly/api/shorten'] = array(
-    'title'            => t('Search Service'),
-    'description'      => t('Configure search service.'),
     'file'             => 'shurly_service.inc',
     'page callback'    => 'shurly_service_shorten',
     'access arguments' => array('Create short URLs'),
+    'type'             => MENU_CALLBACK,
+  );
+  $items['shurly/api/expand'] = array(
+    'file'             => 'shurly_service.inc',
+    'page callback'    => 'shurly_service_expand',
+    'access callback' => TRUE,
     'type'             => MENU_CALLBACK,
   );
 
