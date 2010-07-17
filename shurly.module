@@ -687,7 +687,7 @@ function shurly_goto($row) {
   if (!defined('MAINTENANCE_MODE') || MAINTENANCE_MODE != 'update') {
     // Allow other modules to implement hook_shurly_redirect()
     // to add additional logging information to the database or perform other tasks
-    module_invoke_all('shurly_redirect', $row)
+    module_invoke_all('shurly_redirect', $row);
   
     // Allow modules to react to the end of the page request before redirecting.
     module_invoke_all('exit', $url);
