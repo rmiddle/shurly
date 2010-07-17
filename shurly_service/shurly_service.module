@@ -4,7 +4,7 @@
  * @file
  *  Link ShURLy functionalities to services module.
  * @todo
- *  - add option to rate limit
+ *  - add option to rate limit requests
  *  - add option for user api keys
  *  
  */

@@ -36,6 +36,14 @@ function shurly_menu() {
     'type' => MENU_CALLBACK,
   );
   
+  $items['admin/build/shurly/settings'] = array(
+    'title' => 'Settings',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('shurly_settings_form'),
+    'access arguments' => array('Administer short URLs'),
+    'type' => MENU_LOCAL_TASK,
+  );
+  
   return $items;
 }
 
@@ -198,6 +206,12 @@ function shurly_create_form_validate(&$form, &$form_state) {
     return;
   }
   
+  $rate_limit = shurly_rate_limit_allowed();
+  if (!$rate_limit['allowed']) {
+    form_set_error('', t('Rate limit exceeded. You are limited to @rate requests per @time minute period.', array('@rate' => $rate_limit['rate'], '@time' => $rate_limit['time'])));
+    return;
+  }
+  
   $form_state['values']['long_url'] = trim($form_state['values']['long_url']);
   $form_state['values']['short_url'] = trim($form_state['values']['short_url']);
   $vals = $form_state['values'];
@@ -264,6 +278,47 @@ function shurly_create_form_submit($form, &$form_state) {
   }
 }
 
+
+function shurly_settings_form($form_state) {
+  $form['shurly_throttle'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Rate limiting'),
+    '#tree' => TRUE,
+    '#description' => t('Limit requests by IP address. Leave blank for no rate limiting.<br /><strong>Note:</strong> Only roles with the \'Create short URLs\' permission are listed here. Change that permission <a href="!url">here</a>.', array('!url' => url('admin/user/permissions', array('fragment' => 'module-shurly')))),
+  );
+  $saved = variable_get('shurly_throttle', array());
+  foreach (user_roles(FALSE, 'Create short URLs') as $rid => $name) {
+    $form['shurly_throttle'][$rid] = array(
+      '#type' => 'fieldset',
+      '#title' => $name,
+      '#tree' => TRUE,
+    );
+    $form['shurly_throttle'][$rid]['rate'] = array(
+      '#type' => 'textfield',
+      '#size' => '3',
+      '#prefix' => '<div class="container-inline">',
+      '#field_suffix' => ' ' . t('requests'),
+      '#default_value' => $saved[$rid]['rate'],
+    );
+    $form['shurly_throttle'][$rid]['time'] = array(
+      '#type' => 'textfield',
+      '#size' => '3',
+      '#field_prefix' => t('within'),
+      '#field_suffix' => ' ' . t('minutes'),
+      '#default_value' => $saved[$rid]['time'],
+      '#suffix' => '</div>',
+    );
+    $form['shurly_throttle'][$rid]['weight'] = array(
+      '#type' => 'weight',
+      '#title' => t('Weight'),
+      '#default_value' => isset($saved[$rid]['weight']) ? $saved[$rid]['weight'] : 0,
+      '#description' => t('Order of this role when considering a user with multiple roles. A user\'s lightest role will take precedence.'),
+    );
+    
+  }
+  return system_settings_form($form);
+}
+
 /**
  * From http://www.php.net/manual/en/function.base-convert.php#52450
  *
@@ -291,6 +346,32 @@ function shurly_dec2any($num, $base=62, $index=FALSE) {
 }
 
 
+/**************************************************************
+ * Backport of the flood controls from Drupal 7
+ * these functions won't be needed in the D7 version of ShURLy
+ **************************************************************/
+
+function shurly_cron() {
+  // Cleanup the flood.
+  db_query('DELETE FROM {shurly_flood} WHERE expiration < %d', time());
+}
+
+function shurly_flood_register_event($name, $window = 3600, $identifier = NULL) {
+  if (!isset($identifier)) {
+    $identifier = ip_address();
+  }
+  db_query("INSERT INTO {shurly_flood} (event, identifier, timestamp, expiration) VALUES ('%s', '%s', %d, %d)", $name, ip_address(), time(), time() + $window);
+
+}
+
+function shurly_flood_is_allowed($name, $threshold, $window = 3600, $identifier = NULL) {
+  if (!isset($identifier)) {
+    $identifier = ip_address();
+  }
+  $number = db_result(db_query("SELECT COUNT(*) FROM {shurly_flood} WHERE event = '%s' AND identifier = '%s' AND timestamp > %d", $name, $identifier, time() - $window));
+  return ($number < $threshold);
+}
+
 
 /******************************************************
  * API functions
@@ -312,7 +393,11 @@ function shurly_shorten($long_url, $custom = NULL, $account = NULL) {
   $success = FALSE;
   $account = ($account) ? $account : $GLOBALS['user'];
   $error = '';
-  if (!shurly_validate_long($long_url)) {
+  $rate_limit = shurly_rate_limit_allowed($account);
+  if (!$rate_limit['allowed']) {
+    $error = t('Rate limit exceeded. You are limited to @rate requests per @time minute period.', array('@rate' => $rate_limit['rate'], '@time' => $rate_limit['time']));
+  }
+  elseif (!shurly_validate_long($long_url)) {
     $error = t('Invalid long URL.');
   }
   elseif (is_null($custom)) {
@@ -346,14 +431,19 @@ function shurly_shorten($long_url, $custom = NULL, $account = NULL) {
   );
 }
 
-function shurly_expand($short) {
-  if ($redirect = shurly_get_redirect($short, TRUE)) {
+function shurly_expand($short, $account = NULL) {
+  $error = '';
+  $success = FALSE;
+  $rate_limit = shurly_rate_limit_allowed($account);
+  if (!$rate_limit['allowed']) {
+    $error = t('Rate limit exceeded. You are limited to @rate requests per @time minute period.', array('@rate' => $rate_limit['rate'], '@time' => $rate_limit['time']));
+  }
+  elseif ($redirect = shurly_get_redirect($short, TRUE)) {
     $success = TRUE;
     $long_url = $redirect->destination;
   }
   else {
-    $success = FALSE;
-    $error = t('not found');
+    $error = t('Not found');
   }
   return array(
     'success' => $success,
@@ -361,6 +451,54 @@ function shurly_expand($short) {
     'longUrl' => $long_url,
     'shortUrl' => url($short, array('absolute' => TRUE)),
   );
+}
+
+/**
+ * Check rate limit for this user
+ * return an array in the following format
+ * array(
+ *  'allowed' => TRUE/FALSE
+ *  'rate' => number of requests allowed
+ *  'time' => period of time in minutes
+ * )
+ */
+function shurly_rate_limit_allowed($account = NULL) {
+  if (!isset($account)) {
+    global $user;
+    $account = $user;
+  }
+  $settings = variable_get('shurly_throttle', array());
+  if (is_array($account->roles)) {
+    $use_rid = array_shift(array_keys($account->roles));
+    // get list of roles with permission to create short URLs
+    $creating_roles = user_roles(FALSE, 'Create short URLs');
+    foreach($account->roles as $rid => $name) {
+      // check that this role has permission to create URLs, otherwise discard it
+      if (array_key_exists($rid, $creating_roles)) {
+        // find the lightest role... if roles are the same weight, use the next role
+        $settings[$rid]['weight'] = isset($settings[$rid]['weight']) ? $settings[$rid]['weight'] : 0;
+        $use_rid = $settings[$use_rid]['weight'] < $settings[$rid]['weight'] ? $use_rid : $rid;
+      }
+    }
+  }
+  if (is_numeric($settings[$use_rid]['rate']) && is_numeric($settings[$use_rid]['time'])) {
+    // see if it's allowed
+    $allowed = shurly_flood_is_allowed('shurly', $settings[$use_rid]['rate'], $settings[$use_rid]['time'] * 60);
+    // increment the counter
+    shurly_flood_register_event('shurly', $settings[$use_rid]['time'] * 60);
+    $return = array(
+      'allowed' => $allowed,
+      'rate' => $settings[$use_rid]['rate'],
+      'time' => $settings[$use_rid]['time'],
+    );
+  }
+  else {
+    // not set... don't do a flood check
+    $return = array(
+      'allowed' => TRUE,
+    );
+  }
+  return $return;
 }
  
 /**

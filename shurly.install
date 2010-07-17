@@ -68,6 +68,51 @@ function shurly_schema() {
       'source' => array('source'),
     ),
   );
+  
+  $schema['shurly_flood'] = array(
+    'description' => t('Flood controls the threshold of events, such as the number of contact attempts.'),
+    'fields' => array(
+      'fid' => array(
+        'description' => t('Unique flood event ID.'),
+        'type' => 'serial',
+        'not null' => TRUE,
+      ),
+      'event' => array(
+        'description' => t('Name of event (e.g. contact).'),
+        'type' => 'varchar',
+        'length' => 64,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'identifier' => array(
+        'description' => t('Identifier of the visitor, such as an IP address or hostname.'),
+        'type' => 'varchar',
+        'length' => 128,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'timestamp' => array(
+        'description' => t('Timestamp of the event.'),
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'expiration' => array(
+        'description' => t('Expiration timestamp. Expired events are purged on cron run.'),
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+    ),
+    'primary key' => array('fid'),
+    'indexes' => array(
+      'allow' => array('event', 'identifier', 'timestamp'),
+      //'purge' => array('expiration'),
+    ),
+  );
+
+
+  
   return $schema;
 }
 
@@ -77,6 +122,18 @@ function shurly_schema() {
  */
 function shurly_install() {
   drupal_install_schema('shurly');
+  drupal_install_schema('shurly_flood');
+}
+
+function shurly_update_6100() {
+  $module = 'shurly';
+  $schema = drupal_get_schema_unprocessed($module);
+  _drupal_initialize_schema($module, $schema);
+  
+  $ret = array();
+  db_create_table($ret, 'shurly_flood', $schema['shurly_flood']);
+  
+  return $ret;
 }
 
 /**
@@ -85,6 +142,7 @@ function shurly_install() {
 function shurly_uninstall() {
   // Remove tables.
   drupal_uninstall_schema('shurly');
+  drupal_uninstall_schema('shurly_flood');
 
   // Remove variables.
 

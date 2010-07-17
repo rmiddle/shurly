@@ -43,7 +43,7 @@ function shurly_service_expand() {
   
   $path = array_pop(explode('/', $input['shortUrl']));
   //$path = substr(strrchr($input['shortUrl'], "/"), 1);
-  $data = shurly_expand($path, TRUE);
+  $data = shurly_expand($path);
     
   shurly_service_output($data, $input);
   
@@ -94,7 +94,12 @@ function shurly_service_output_txt($data) {
     default:
       $key = 'shortUrl';
   }
-  print $data[$key];
+  if ($data['success']) {
+    print $data[$key];
+  }
+  else {
+    print t("ERROR: !error", array('!error' => $data['error']));
+  }
 }
 
 /**
