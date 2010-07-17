@@ -393,6 +393,7 @@ function shurly_shorten($long_url, $custom = NULL, $account = NULL) {
   $success = FALSE;
   $account = ($account) ? $account : $GLOBALS['user'];
   $error = '';
+  $no_save = FALSE;
   $rate_limit = shurly_rate_limit_allowed($account);
   if (!$rate_limit['allowed']) {
     $error = t('Rate limit exceeded. You are limited to @rate requests per @time minute period.', array('@rate' => $rate_limit['rate'], '@time' => $rate_limit['time']));
@@ -402,7 +403,14 @@ function shurly_shorten($long_url, $custom = NULL, $account = NULL) {
   }
   elseif (is_null($custom)) {
     $latest = shurly_get_latest_short($long_url, $account->uid);
-    $short = $latest ? $latest : shurly_next_url();
+    if ($latest) {
+      $no_save = TRUE;
+      $success = TRUE;
+      $short = $latest;
+    }
+    else {
+      $short = shurly_next_url();
+    }
   }
   else {
     $short = $custom;
@@ -415,7 +423,7 @@ function shurly_shorten($long_url, $custom = NULL, $account = NULL) {
       $error .= t('Existing short URL.');
     }
   }
-  if (!$error) {
+  if (!$error && !$no_save) {
     if (shurly_save_url($long_url, $short, $account, $custom)) {
       $success = TRUE;
     }
@@ -427,7 +435,7 @@ function shurly_shorten($long_url, $custom = NULL, $account = NULL) {
     'success' => $success,
     'error' => $error,
     'longUrl' => $long_url,
-    'shortUrl' => url($short, array('absolute' => TRUE)),
+    'shortUrl' => isset($short) ? url($short, array('absolute' => TRUE)) : '',
   );
 }
 
