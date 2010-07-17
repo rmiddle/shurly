@@ -218,7 +218,7 @@ function shurly_views_default_views() {
       'alter' => array(
         'alter_text' => 1,
         'text' => '<div class="shurly-ago">[created_1]</div>
-<div class="shurly-date">[created]</div>',
+  <div class="shurly-date">[created]</div>',
         'make_link' => 0,
         'path' => '',
         'link_class' => '',
@@ -397,7 +397,7 @@ function shurly_views_default_views() {
   $handler->override_option('title', 'Short URLs');
   $handler->override_option('empty', 'No short URLs yet!');
   $handler->override_option('empty_format', '1');
-  $handler->override_option('items_per_page', 100);
+  $handler->override_option('items_per_page', 150);
   $handler->override_option('use_pager', '1');
   $handler->override_option('style_plugin', 'table');
   $handler->override_option('style_options', array(
@@ -456,22 +456,22 @@ function shurly_views_default_views() {
     'default' => 'created_1',
   ));
   $handler = $view->new_display('page', 'Administer short URLs', 'page_1');
-  $handler->override_option('path', 'admin/build/shurly');
+  $handler->override_option('path', 'admin/build/shurly/list');
   $handler->override_option('menu', array(
+    'type' => 'default tab',
+    'title' => 'Short URLs',
+    'description' => 'List, sort, and edit Shurly short URLs',
+    'weight' => '-5',
+    'name' => 'navigation',
+  ));
+  $handler->override_option('tab_options', array(
     'type' => 'normal',
     'title' => 'Short URLs',
     'description' => 'List, sort, and edit Shurly short URLs',
     'weight' => '0',
     'name' => 'navigation',
   ));
-  $handler->override_option('tab_options', array(
-    'type' => 'none',
-    'title' => '',
-    'description' => '',
-    'weight' => 0,
-    'name' => 'navigation',
-  ));
-  $views[$view->name] = $view;
+
 
   /*
    * View 'shurly_my_urls'
