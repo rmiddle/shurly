@@ -471,6 +471,7 @@ function shurly_views_default_views() {
     'weight' => '0',
     'name' => 'navigation',
   ));
+  $views[$view->name] = $view;
 
 
   /*
