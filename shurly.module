@@ -94,6 +94,19 @@ function shurly_boot() {
 }
 
 /**
+ * Implementation of hook_theme()
+ */
+function shurly_theme($existing, $type, $theme, $path) {
+  return array(
+    'shurly_create_form' => array(
+      'arguments' => array('form' => NULL),
+      //'file' => 'shurly_form.inc',
+    ),
+  );
+}
+
+
+/**
  	* Implementation of hook_views_api.
  	* Notifies the Views module that we're compatible with a particular API revision.
  	*/
@@ -196,6 +209,17 @@ function shurly_create_form($form_state) {
   
   return $form;
   
+}
+
+function theme_shurly_create_form($form) {
+  $output = '';
+  $output .= '<div class="container-inline">';
+  $output .= drupal_render($form['long_url']);
+  $output .= drupal_render($form['submit']);
+  $output .= '</div>';
+  $output .= drupal_render($form['short_url']);
+  $output .= drupal_render($form);
+  return $output;
 }
 
 
