@@ -40,3 +40,59 @@ function shurly_service_menu() {
   return $items;
 }
 
+function shurly_service_block($op = 'list', $delta = 0, $edit = array()) {
+  // create a block to add URL
+  switch ($op) {
+    case 'list':
+      $blocks['api_key'] = array('info' => t('Short URL API key'));
+      return $blocks;
+    case 'view':
+      global $user;
+      // anon user can't get API key, also check permissions
+      if ($delta == 'api_key' && $user->uid > 0 && user_access('Create short URLs') ) {
+        $block = array('subject' => t('API key'),
+          'content' => drupal_get_form('shurly_api_key_form'));
+        return $block;
+      }
+      break;
+  }
+}
+
+function shurly_api_key_form($form_state) {
+  global $user;
+  module_load_include('inc', 'shurly_service', 'shurly_api_keys');
+  $key = shurly_get_api_key($user->uid);
+  
+  $form = array();
+  if ($key) {
+    $form['key'] = array(
+      '#type' => 'textfield',
+      '#title' => t('API key'),
+      '#default_value' => $key,
+      '#description' => t('You can provide this key to 3rd party apps rather than sharing your password.'),
+    );
+    $form['reset'] = array(
+      '#type' => 'submit',
+      '#value' => t('Reset'),
+      '#suffix' => t('If a 3rd party is misusing your API key, you can generate a new one.'),
+    );
+    
+  }
+  else {
+    $form['new'] = array(
+      '#type' => 'submit',
+      '#value' => t('Create'),
+      '#suffix' =>  t('Create an API key to use with 3rd party applications.'),
+    );
+  }
+  
+  return $form;
+}
+
+function shurly_api_key_form_submit($form, &$form_state) {
+  // we don't need to do anything with the submitted form... 
+  // just generate a new API key
+  global $user;
+  shurly_generate_new_api_key($user->uid);
+}
+

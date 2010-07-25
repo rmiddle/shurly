@@ -15,12 +15,19 @@ function shurly_service_shorten() {
     'longUrl' => '',
     //'shortUrl' => '', // intentionally not implemented for now...
     // 'login' => NULL,
-    // 'apiKey' => NULL,
+    'apiKey' => NULL,
     'func' => 'urlData', // function name for padded JSON
   );
   $input = $_REQUEST + $defaults;
+  $account = NULL;
   
-  $data = shurly_shorten($input['longUrl']);
+  if ($input['apiKey']) {
+    module_load_include('inc', 'shurly_service', 'shurly_api_keys');
+    $uid = shurly_get_uid($input['apiKey']);
+    $account = user_load($uid);
+  }
+  
+  $data = shurly_shorten($input['longUrl'], NULL, $account);
     
   shurly_service_output($data, $input);
   
