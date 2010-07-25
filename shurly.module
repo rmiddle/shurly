@@ -164,6 +164,7 @@ function shurly_confirm_delete_form_submit($form, &$form_state) {
 function shurly_create_form($form_state) {
   
   $path = drupal_get_path('module', 'shurly');
+  
   drupal_add_css($path . '/shurly.css');
 
   // form to create new short URLs
@@ -197,7 +198,7 @@ function shurly_create_form($form_state) {
       '#prefix' => '<div class="shurly-result">',
       '#suffix' => '</div>',
       '#field_prefix' => t('Your short URL: '),
-      '#field_suffix' => ' <div id="shurly-copy-container" style="position:relative;"><div id="shurly-copy">' . t('copy') . '</div></div>
+      '#field_suffix' => ' <div id="shurly-copy-container"><div id="shurly-copy">' . t('copy') . '</div></div>
       <div><a href="http://twitter.com?status='. urlencode($form_state['storage']['shurly']['final_url']) .'">' . t('Create a Twitter message with this link') . '</a></div></div>',
     );
     drupal_add_js($path . '/zeroclipboard/ZeroClipboard.js');
@@ -244,8 +245,8 @@ function shurly_create_form_validate(&$form, &$form_state) {
   if ($vals['long_url'] == '' || $vals['long_url'] == 'http://' || $vals['long_url'] == 'https://') {
     form_set_error('long_url', t('Please enter a web URL'));
   }
-  elseif (stripos($vals['long_url'], "http://") !== 0 && stripos($vals['long_url'], "https://") !== 0) {
-    form_set_error('long_url', t('Please enter a web URL beginning with http:// or https://'));
+  elseif (!shurly_validate_long($vals['long_url'])) {
+    form_set_error('long_url', t('Invalid URL'));
   }
   
   if (trim($vals['short_url']) != '') {
@@ -590,7 +591,78 @@ function shurly_validate_custom($custom) {
 
 
 function shurly_validate_long($long_url) {
-  return (stripos($long_url, "http://") === 0 || stripos($long_url, "https://") === 0);
+  $return = TRUE;
+  $match = FALSE;
+  $long_parse = parse_url($long_url);
+  $base_parse = parse_url($GLOBALS['base_url']);
+  
+  if ($long_parse === FALSE || !$long_parse['host']) {
+    // malformed URL
+    // or no host in the URL
+    $return = FALSE;
+  }
+  elseif ($long_parse['scheme'] != 'http' && $long_parse['scheme'] != 'https') {
+    $return = FALSE; 
+  }
+  else {
+    $long_domain_parts = explode('.', $long_parse['host']);
+    $base_domain_parts = explode('.', $base_parse['host']);
+    // if last domain part of entered URL matches last part of this domain
+    if ($long_domain_parts[count($long_domain_parts) - 1] == $base_domain_parts[count($long_domain_parts) - 1]) {
+      // and (if there's a 2nd to last)
+      if (count($long_domain_parts) >= 2) {
+        // check that 2nd to last matches
+        if ($long_domain_parts[count($long_domain_parts) - 2] == $base_domain_parts[count($long_domain_parts) - 2]) {
+          // last 2 parts link to this domain
+          $match = TRUE;
+        }
+      }
+      else {
+        // there's only one part, and it links here
+        $match = TRUE;
+      }
+      
+      // We only get down here if the long URL links to this domain
+      // by the way, we're ignoring any subdomain...
+      // so http://lbt.me/something and http://www.lbt.me/something are assumed to be the same
+      if ($match) {
+        // let's see if there's a $_GET['q'] in the long URL
+        $query = $long_parse['query'];
+        $query  = html_entity_decode($query);
+        $query_array  = explode('&', $query);
+        $queries  = array();
+        foreach ($query_array as $val) {
+          $x = explode('=', $val);
+          $queries[$x[0]] = $x[1];
+        }
+                
+        if ($queries['q']) {
+          // if there's a 'q' query, Drupal uses this instead of anything in the path
+          $path = $queries['q'];
+        }
+        else {
+          $path = $long_parse['path'];
+        }
+      
+        // see if this is a link to an existing shortURL
+        // remove the leading "/" from path, if it exists
+        $path = array_pop(explode('/', $path, 2));
+        if ($path) {
+          // get the base path of this Drupal install
+          $base = array_pop(explode('/', base_path(), 2));
+          // remove the base from the path
+          if ($base) {
+            $path = preg_replace('!'. preg_quote($base, '!') .'!i', '', $path);
+          }
+          if (shurly_url_exists($path)) {
+            $return = FALSE;
+          }
+        }
+      }
+      
+    }
+  }
+  return $return;
 }
 
 /**
