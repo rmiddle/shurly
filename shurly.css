@@ -19,7 +19,6 @@
 #shurly-copy {
   border: 2px outset #999;
   background-color: #CCC;
-  position: relative;
   display: inline;
   padding: .1em .3em;
 }
@@ -32,12 +31,14 @@
 .shurly-bookmarklet {
   background-color: #999;
   color: #FFF;
-  border: 1px solid #333;
   padding: .1em .5em;
   text-decoration: none;
+  -moz-border-radius: .7em;
+  -webkit-border-radius: .7em;
 }
 
 .shurly-bookmarklet:hover {
-  background-color: #666;
+  background-color: #CCC;
   text-decoration: none;
+  color: #000;
 }
