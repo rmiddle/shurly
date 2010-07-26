@@ -24,6 +24,13 @@ function shurly_service_shorten() {
   if ($input['apiKey']) {
     module_load_include('inc', 'shurly_service', 'shurly_api_keys');
     $uid = shurly_get_uid($input['apiKey']);
+    if (!$uid) {
+      $data = array(
+        'success' => FALSE,
+        'error' => t('Invalid API key'),
+      );
+      return shurly_service_output($data, $input);
+    }
     $account = user_load($uid);
   }
   
@@ -52,6 +59,13 @@ function shurly_service_expand() {
   if ($input['apiKey']) {
     module_load_include('inc', 'shurly_service', 'shurly_api_keys');
     $uid = shurly_get_uid($input['apiKey']);
+    if (!$uid) {
+      $data = array(
+        'success' => FALSE,
+        'error' => t('Invalid API key'),
+      );
+      return shurly_service_output($data, $input);
+    }
     $account = user_load($uid);
   }
   
