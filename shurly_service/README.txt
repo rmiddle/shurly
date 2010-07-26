@@ -22,4 +22,4 @@ EXPANDING A URL:
 Works just as above, but returns expanded URL. All formats are supported.
 Here, the API key only modifies rate limiting.
 
-http://lbt.me/shurly/api/expand?shortURL=http://lbt.me/Zk5
+http://lbt.me/shurly/api/expand?shortUrl=http://lbt.me/Zk5
