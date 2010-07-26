@@ -33,3 +33,26 @@ function shurly_service_schema() {
 function shurly_service_install() {
   drupal_install_schema('shurly_keys');
 }
+
+
+function shurly_service_update_6100() {
+  $module = 'shurly_service';
+  $schema = drupal_get_schema_unprocessed($module);
+  _drupal_initialize_schema($module, $schema);
+  
+  $ret = array();
+  db_create_table($ret, 'shurly_keys', $schema['shurly_keys']);
+  
+  return $ret;
+}
+
+/**
+ * Implement hook_uninstall().
+ */
+function shurly_service_uninstall() {
+  // Remove tables.
+  drupal_uninstall_schema('shurly_keys');
+
+  // Remove variables.
+
+}
