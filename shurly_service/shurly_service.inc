@@ -43,14 +43,20 @@ function shurly_service_expand() {
     //'longUrl' => '',
     'shortUrl' => '',
     // 'login' => NULL,
-    // 'apiKey' => NULL,
+    'apiKey' => NULL,
     'func' => 'urlData', // function name for padded JSON
   );
   $input = $_REQUEST + $defaults;
+  $account = NULL;
   
-  $path = array_pop(explode('/', $input['shortUrl']));
-  //$path = substr(strrchr($input['shortUrl'], "/"), 1);
-  $data = shurly_expand($path);
+  if ($input['apiKey']) {
+    module_load_include('inc', 'shurly_service', 'shurly_api_keys');
+    $uid = shurly_get_uid($input['apiKey']);
+    $account = user_load($uid);
+  }
+  
+  $path = array_pop(explode('/', parse_url($input['shortUrl'], PHP_URL_PATH))); // only works with clean URLs
+  $data = shurly_expand($path, $account);
     
   shurly_service_output($data, $input);
   
