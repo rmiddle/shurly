@@ -162,10 +162,6 @@ function shurly_confirm_delete_form_submit($form, &$form_state) {
  * The main form
  */
 function shurly_create_form($form_state) {
-  
-  $path = drupal_get_path('module', 'shurly');
-  
-  drupal_add_css($path . '/shurly.css');
 
   // form to create new short URLs
   $form['long_url'] = array(
@@ -201,9 +197,6 @@ function shurly_create_form($form_state) {
       '#field_suffix' => ' <div id="shurly-copy-container"><div id="shurly-copy">' . t('copy') . '</div></div>
       <div><a href="http://twitter.com?status='. urlencode($form_state['storage']['shurly']['final_url']) .'">' . t('Create a Twitter message with this link') . '</a></div></div>',
     );
-    drupal_add_js($path . '/zeroclipboard/ZeroClipboard.js');
-    drupal_add_js($path . '/shurly.js');
-    drupal_add_js("ZeroClipboard.setMoviePath( '". url($path .'/zeroclipboard/ZeroClipboard.swf') ."' );", 'inline');
   }
   
   unset($form_state['storage']['shurly']);
@@ -213,6 +206,11 @@ function shurly_create_form($form_state) {
 }
 
 function theme_shurly_create_form($form) {
+  $path = drupal_get_path('module', 'shurly');
+  drupal_add_css($path . '/shurly.css');
+  drupal_add_js($path . '/zeroclipboard/ZeroClipboard.js');
+  drupal_add_js($path . '/shurly.js');
+  drupal_add_js("ZeroClipboard.setMoviePath( '". url($path .'/zeroclipboard/ZeroClipboard.swf') ."' );", 'inline');
   $output = '';
   $output .= '<div class="container-inline">';
   $output .= drupal_render($form['long_url']);
