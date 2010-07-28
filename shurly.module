@@ -243,7 +243,7 @@ function shurly_create_form_validate(&$form, &$form_state) {
   if ($vals['long_url'] == '' || $vals['long_url'] == 'http://' || $vals['long_url'] == 'https://') {
     form_set_error('long_url', t('Please enter a web URL'));
   }
-  elseif (!shurly_validate_long($vals['long_url'])) {
+  elseif (!shurly_validate_long($form_state['values']['long_url'])) {
     form_set_error('long_url', t('Invalid URL'));
   }
   
@@ -588,9 +588,13 @@ function shurly_validate_custom($custom) {
 }
 
 
-function shurly_validate_long($long_url) {
+function shurly_validate_long(&$long_url) {
   $return = TRUE;
   $match = FALSE;
+  
+  // if the person didn't remove the original http:// from the field, pull it out
+  $long_url = preg_replace('!^http\://(http\://|https\://)!i', '\\1', $long_url);
+  
   $long_parse = parse_url($long_url);
   $base_parse = parse_url($GLOBALS['base_url']);
   
