@@ -194,7 +194,7 @@ function shurly_create_form($form_state) {
       '#prefix' => '<div class="shurly-result">',
       '#suffix' => '</div>',
       '#field_prefix' => t('Your short URL: '),
-      '#field_suffix' => ' <div id="shurly-copy-container"><div id="shurly-copy">' . t('copy') . '</div></div>
+      '#field_suffix' => ' <div id="shurly-copy-container" style="position:relative;"><div id="shurly-copy">' . t('copy') . '</div></div>
       <div><a href="http://twitter.com?status='. urlencode($form_state['storage']['shurly']['final_url']) .'">' . t('Create a Twitter message with this link') . '</a></div></div>',
     );
   }

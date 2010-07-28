@@ -62,11 +62,12 @@ var ZeroClipboard = {
 			height: obj.height ? obj.height : obj.offsetHeight
 		};
 
-		while (obj && (obj != stopObj)) {
-			info.left += obj.offsetLeft;
-			info.top += obj.offsetTop;
-			obj = obj.offsetParent;
-		}
+		// commented out.. requires relative parent around target element
+		//while (obj && (obj != stopObj)) {
+		//	info.left += obj.offsetLeft;
+		//	info.top += obj.offsetTop;
+		//	obj = obj.offsetParent;
+		//}
 
 		return info;
 	},
