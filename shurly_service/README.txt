@@ -9,6 +9,9 @@ http://lbt.me/shurly/api/shorten?longUrl=http://www.lullabot.com&format=txt
 XML format:
 http://lbt.me/shurly/api/shorten?longUrl=http://www.lullabot.com&format=xml
 
+PHP serialized array:
+http://lbt.me/shurly/api/shorten?longUrl=http://www.lullabot.com&format=php
+
 JSONP takes (optional) additional "func" argument to define function:
 http://lbt.me/shurly/api/shorten?longUrl=http://www.lullabot.com&format=jsonp&func=gimmeUrl
 
